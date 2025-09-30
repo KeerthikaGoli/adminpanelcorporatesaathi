@@ -15,7 +15,7 @@ const statusStyles = {
 };
 
 const PayrollTable: React.FC<Props> = ({ records, employees, onViewSlip }) => {
-  const employeeMap = new Map(employees.map(e => [e.id, e]));
+  const employeeMap = new Map<number, Employee>(employees.map(e => [e.id, e] as [number, Employee]));
 
   return (
     <div className="bg-white rounded-xl shadow-md overflow-hidden">

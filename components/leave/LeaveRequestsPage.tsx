@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { CheckIcon, XIcon, EyeIcon, FilterIcon, CalendarIcon, UserIcon } from '../icons/Icons';
+import React, { useMemo, useState } from 'react';
+import { CheckIcon, XIcon, EyeIcon, FilterIcon, CalendarIcon, UserIcon, PlusIcon } from '../icons/Icons';
 import { formatDistanceToNow } from 'date-fns';
 import { LeaveRequest, mockLeaveRequests } from './data';
 
@@ -11,6 +11,18 @@ const LeaveRequestsPage: React.FC<LeaveRequestsPageProps> = ({ searchQuery }) =>
   const [requests, setRequests] = useState<LeaveRequest[]>(mockLeaveRequests);
   const [filterStatus, setFilterStatus] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
   const [selectedRequest, setSelectedRequest] = useState<LeaveRequest | null>(null);
+  const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
+
+  const initialForm = useMemo(() => ({
+    assignToType: 'Employee',
+    personId: '',
+    leaveType: '',
+    startDate: '',
+    endDate: '',
+    priority: 'medium' as 'low' | 'medium' | 'high',
+    reason: '',
+  }), []);
+  const [assignForm, setAssignForm] = useState(initialForm);
 
   const handleApprove = (id: string) => {
     setRequests(prev => prev.map(req => 
@@ -31,6 +43,41 @@ const LeaveRequestsPage: React.FC<LeaveRequestsPageProps> = ({ searchQuery }) =>
     const matchesStatus = filterStatus === 'all' || request.status === filterStatus;
     return matchesSearch && matchesStatus;
   });
+
+  const calculateDays = (start: string, end: string) => {
+    if (!start || !end) return 0;
+    const s = new Date(start);
+    const e = new Date(end);
+    const diff = Math.ceil((e.getTime() - s.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+    return diff > 0 ? diff : 0;
+  };
+
+  const resetAssignForm = () => setAssignForm(initialForm);
+
+  const handleCreateAssignment = () => {
+    const days = calculateDays(assignForm.startDate, assignForm.endDate);
+    if (!assignForm.leaveType || !assignForm.startDate || !assignForm.endDate || days <= 0) {
+      alert('Please select leave type, valid start and end dates.');
+      return;
+    }
+    const newRequest: LeaveRequest = {
+      id: Date.now().toString(),
+      employeeName: assignForm.personId || 'Selected Employee',
+      employeeId: assignForm.personId || 'EMPXXX',
+      department: 'General',
+      leaveType: assignForm.leaveType,
+      startDate: assignForm.startDate,
+      endDate: assignForm.endDate,
+      days,
+      reason: assignForm.reason || 'Assigned by admin',
+      status: 'pending',
+      submittedDate: new Date().toISOString(),
+      priority: assignForm.priority,
+    };
+    setRequests(prev => [newRequest, ...prev]);
+    setIsAssignModalOpen(false);
+    resetAssignForm();
+  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -111,7 +158,7 @@ const LeaveRequestsPage: React.FC<LeaveRequestsPageProps> = ({ searchQuery }) =>
         </div>
       </div>
 
-      {/* Filters */}
+      {/* Filters and Actions */}
       <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
         <div className="flex items-center space-x-4">
           <FilterIcon className="w-5 h-5 text-gray-400" />
@@ -126,6 +173,14 @@ const LeaveRequestsPage: React.FC<LeaveRequestsPageProps> = ({ searchQuery }) =>
             <option value="rejected">Rejected</option>
           </select>
         </div>
+        <div className="flex-1" />
+        <button
+          onClick={() => setIsAssignModalOpen(true)}
+          className="inline-flex items-center px-4 py-2 bg-primary text-white rounded-md text-sm font-medium hover:bg-primary/90 transition-colors"
+        >
+          <PlusIcon className="w-4 h-4 mr-2" />
+          Assign Leave
+        </button>
       </div>
 
       {/* Leave Requests Table */}
@@ -285,6 +340,75 @@ const LeaveRequestsPage: React.FC<LeaveRequestsPageProps> = ({ searchQuery }) =>
                   </button>
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Assign Leave Modal */}
+      {isAssignModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Assign Leave</h3>
+                <button onClick={() => { setIsAssignModalOpen(false); resetAssignForm(); }} className="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300">
+                  <XIcon className="w-6 h-6" />
+                </button>
+              </div>
+            </div>
+            <div className="p-6 space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Assign To</label>
+                  <select value={assignForm.assignToType} onChange={(e) => setAssignForm(prev => ({ ...prev, assignToType: e.target.value }))} className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                    <option>Employee</option>
+                    <option>Department</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Select Person</label>
+                  <input value={assignForm.personId} onChange={(e) => setAssignForm(prev => ({ ...prev, personId: e.target.value }))} placeholder="Choose..." className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Leave Type</label>
+                  <select value={assignForm.leaveType} onChange={(e) => setAssignForm(prev => ({ ...prev, leaveType: e.target.value }))} className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                    <option value="">Choose leave type...</option>
+                    <option>Annual Leave</option>
+                    <option>Sick Leave</option>
+                    <option>Personal Leave</option>
+                    <option>Maternity Leave</option>
+                    <option>Paternity Leave</option>
+                  </select>
+                </div>
+                <div className="grid grid-cols-2 gap-4 md:col-span-1">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Start Date</label>
+                    <input type="date" value={assignForm.startDate} onChange={(e) => setAssignForm(prev => ({ ...prev, startDate: e.target.value }))} className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">End Date</label>
+                    <input type="date" value={assignForm.endDate} onChange={(e) => setAssignForm(prev => ({ ...prev, endDate: e.target.value }))} className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100" />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Priority</label>
+                  <select value={assignForm.priority} onChange={(e) => setAssignForm(prev => ({ ...prev, priority: e.target.value as 'low' | 'medium' | 'high' }))} className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                    <option value="high">High</option>
+                    <option value="medium">Medium</option>
+                    <option value="low">Low</option>
+                  </select>
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Reason</label>
+                  <textarea rows={3} value={assignForm.reason} onChange={(e) => setAssignForm(prev => ({ ...prev, reason: e.target.value }))} placeholder="e.g. Assigning leave to employee" className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100" />
+                </div>
+                <div className="md:col-span-2 text-sm text-gray-500 dark:text-gray-400">Days: {calculateDays(assignForm.startDate, assignForm.endDate)}</div>
+              </div>
+              <div className="flex justify-end space-x-3">
+                <button onClick={() => { setIsAssignModalOpen(false); resetAssignForm(); }} className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-md text-sm font-medium transition-colors">Cancel</button>
+                <button onClick={handleCreateAssignment} className="px-4 py-2 bg-green-600 text-white hover:bg-green-700 rounded-md text-sm font-medium transition-colors">Assign</button>
+              </div>
             </div>
           </div>
         </div>

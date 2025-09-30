@@ -8,6 +8,7 @@ const LeavePolicyPage: React.FC = () => {
   const [isEditingPolicy, setIsEditingPolicy] = useState(false);
   const [isEditingLeaveType, setIsEditingLeaveType] = useState<string | null>(null);
   const [isAddingLeaveType, setIsAddingLeaveType] = useState(false);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingLeaveType, setEditingLeaveType] = useState<LeaveType | null>(null);
 
   const handleEditPolicy = () => {
@@ -35,6 +36,7 @@ const LeavePolicyPage: React.FC = () => {
     };
     setEditingLeaveType(newLeaveType);
     setIsAddingLeaveType(true);
+    setIsAddModalOpen(true);
   };
 
   const handleSaveLeaveType = () => {
@@ -55,6 +57,7 @@ const LeavePolicyPage: React.FC = () => {
     setEditingLeaveType(null);
     setIsAddingLeaveType(false);
     setIsEditingLeaveType(null);
+    setIsAddModalOpen(false);
   };
 
   const handleDeleteLeaveType = (id: string) => {
@@ -75,6 +78,7 @@ const LeavePolicyPage: React.FC = () => {
     setEditingLeaveType(null);
     setIsAddingLeaveType(false);
     setIsEditingLeaveType(null);
+    setIsAddModalOpen(false);
   };
 
   return (
@@ -397,10 +401,17 @@ const LeavePolicyPage: React.FC = () => {
                   </div>
                 ))}
 
-                {/* Add New Leave Type Form */}
-                {isAddingLeaveType && editingLeaveType && (
-                  <div className="border border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-4 bg-gray-50 dark:bg-gray-700/50">
-                    <div className="space-y-4">
+              {/* Add New Leave Type Modal */}
+              {isAddModalOpen && isAddingLeaveType && editingLeaveType && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+                  <div className="bg-white dark:bg-gray-800 rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+                    <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                      <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Add Leave Type</h3>
+                      <button onClick={cancelEdit} className="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300">
+                        <XIcon className="w-6 h-6" />
+                      </button>
+                    </div>
+                    <div className="p-6 space-y-4">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -527,25 +538,20 @@ const LeavePolicyPage: React.FC = () => {
                         </div>
                       )}
 
-                      <div className="flex justify-end space-x-3">
-                        <button
-                          onClick={cancelEdit}
-                          className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-md text-sm font-medium transition-colors"
-                        >
-                          <XIcon className="w-4 h-4 inline mr-2" />
-                          Cancel
-                        </button>
-                        <button
-                          onClick={handleSaveLeaveType}
-                          className="px-4 py-2 bg-green-600 text-white hover:bg-green-700 rounded-md text-sm font-medium transition-colors"
-                        >
-                          <SaveIcon className="w-4 h-4 inline mr-2" />
-                          Add Leave Type
-                        </button>
-                      </div>
+                    <div className="flex justify-end space-x-3 p-6 pt-0">
+                      <button onClick={cancelEdit} className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-md text-sm font-medium transition-colors">
+                        <XIcon className="w-4 h-4 inline mr-2" />
+                        Cancel
+                      </button>
+                      <button onClick={handleSaveLeaveType} className="px-4 py-2 bg-green-600 text-white hover:bg-green-700 rounded-md text-sm font-medium transition-colors">
+                        <SaveIcon className="w-4 h-4 inline mr-2" />
+                        Add Leave Type
+                      </button>
                     </div>
                   </div>
-                )}
+                </div>
+              </div>
+              )}
               </div>
             </div>
           </div>
